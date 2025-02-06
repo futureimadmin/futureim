@@ -1,0 +1,12 @@
+image:
+  repository: gcr.io/gcp-ms-vault/validationservice
+  tag: latest
+  pullPolicy: Always
+
+service:
+  name: validationservice
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
