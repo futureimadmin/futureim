@@ -1,0 +1,52 @@
+# cloudbuild.yaml
+
+steps:
+  # Clone the repository
+  - name: 'gcr.io/cloud-builders/git'
+    args: ['clone', 'https://github.com/username/repo.git']
+    dir: 'workspace'
+
+  # Step to build the Java JAR file
+  - name: 'gcr.io/cloud-builders/mvn'
+    args: ['clean', 'install']
+    dir: 'workspace/validationservice'
+
+  # Check code quality with Checkstyle
+  - name: 'gcr.io/cloud-builders/mvn'
+    args: ['checkstyle:checkstyle']
+    dir: 'workspace/validationservice'
+
+  # Build the Docker image of the microservice
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/gcp-ms-vault/validationservice:$COMMIT_SHA', './workspace/validationservice']
+
+  # Push the Docker image to the container registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/validationservice:$COMMIT_SHA']
+
+  # Set up kubectl
+  - name: gcr.io/cloud-builders/kubectl
+    id: Configure kubectl
+    args:
+      - cluster-info
+    env:
+      - 'PROJECT=IntelligentMachines'
+      - 'CLOUDSDK_COMPUTE_REGION=asia-south2'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=futureim-cluster-mvp-dev'
+      - KUBECONFIG=/workspace/.kube/config
+
+  # Set up Helm and deploy the application
+  - name: 'gcr.io/cloud-builders/helm'
+    args:
+      - 'upgrade'
+      - '--install'
+      - 'validationservice'
+      - './validationservice-chart'
+      - '--set=image.tag=$COMMIT_SHA'
+      - '--namespace=my-namespace'
+      - '--wait'
+    env:
+      - 'HELM_HOME=/workspace'
+      - 'KUBECONFIG=/workspace/.kube/config'
+      - 'CLOUDSDK_COMPUTE_ZONE=asia-south2'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=futureim-cluster-mvp-dev'
