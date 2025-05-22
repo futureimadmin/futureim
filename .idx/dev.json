@@ -1,0 +1,11 @@
+{
+  "services": {
+    "app": {
+      "command": "mvn spring-boot:run",
+      "ports": [8080]
+    },
+    "installed_packages": [
+      "maven3",
+      "git"]
+  }
+}
